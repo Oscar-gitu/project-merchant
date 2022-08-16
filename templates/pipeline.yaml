@@ -10,7 +10,7 @@ Parameters:
     Default: merchant-working-capital
   TemplateForDeployment:
     Type: String
-    Default: ProjectTemplate.json
+    Default: projectTemplate.json
   ArtifactsZipName:
     Type: String
     Default: deploys/back/projectTemplate.zip
