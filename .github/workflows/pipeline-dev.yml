@@ -99,6 +99,7 @@ jobs:
 
   deploy:
     name: Deploy
+    needs: [deploy_pipelines]
     if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     env:
