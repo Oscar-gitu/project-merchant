@@ -10,6 +10,15 @@
                     "Status": "Enabled"
                 }
             }
+        },
+        "BucketMerchant2": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName": "merchant2-buckett2-123456789",
+                "VersioningConfiguration": {
+                    "Status": "Enabled"
+                }
+            }
         }
     }
 }
