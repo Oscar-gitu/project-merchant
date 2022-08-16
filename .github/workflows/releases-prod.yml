@@ -1,0 +1,109 @@
+name: Releases-prod
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: environment
+        required: true
+        description: Select the environment
+      country:
+        type: choice
+        description: "country to deploy"
+        required: true
+        options:
+          - ALL
+          - HN
+          - SV
+          - BO
+          - PY
+          - GT
+jobs:
+  matrix_prep:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          if echo ${{ github.event.inputs.country  != 'ALL' }} | grep -c "true"
+          then
+            echo "::set-output name=matrix::['${{github.event.inputs.country}}']"
+          else
+            echo "::set-output name=matrix::['HN' ,'SV' , 'BO'  ,'PY' , 'GT']"
+          fi
+  build:
+    needs: [matrix_prep]
+    runs-on: ubuntu-latest
+    environment: "${{ github.event.inputs.environment }}"
+    name: "BUILD  - ${{ github.event.inputs.environment }} - ${{ matrix.version }}"
+    strategy:
+      matrix:
+        version: ${{fromJSON(needs.matrix_prep.outputs.matrix)}}
+    
+    steps:
+      - name: Split environment name
+        uses: xom9ikk/split@v1
+        id: split
+        with:
+          string: ${{ github.event.inputs.environment }}
+          separator: '-'
+          limit: -1
+      - name: "Deploy"
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - id: country
+        name: Change Country String Case
+        uses: ASzc/change-string-case-action@v2
+        with:
+          string: "${{ matrix.version }}"
+      - name: Deploy Pipeline
+        run: |
+          aws s3 cp ./templates/pipeline.yml s3://${{ steps.split.outputs._0 }}-merchant-platform-artifacts-${{ secrets.ACCOUNT_ID }}/deploys/integrator/pipeline.yml
+          aws cloudformation deploy --template-file ./templates/pipelinesBuilder.yaml --stack-name integrator-pipelines --parameter-overrides Environment=${{ steps.split.outputs._0 }} Country=${{ steps.country.outputs.lowercase }} --capabilities CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM CAPABILITY_IAM
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+      - id: pathS3
+        name: Change String Case
+        uses: ASzc/change-string-case-action@v2
+        with:
+          string: "deploys/integrator/${{ matrix.version }}"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install coverage
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          cp ./.env.dist ./.env
+          apm project install
+          sudo apt-get install zip
+
+      - name: Package tempaltes
+        run: |
+          apm project synth
+          aws s3 cp ./src/api.json s3://${{ steps.split.outputs._0 }}-merchant-platform-artifacts-${{ secrets.ACCOUNT_ID }}/${{ steps.pathS3.outputs.lowercase }}/api.json
+
+      - name: AWS Deploy
+        run: |
+          for t in $(ls "templates")
+            do
+              if  [ "${t}" != "apigSetupProcess.asl.json"] || [ "${t}" != "sendReportStepFunction.asl.json" ]
+                then
+                  aws cloudformation package --template-file ./templates/$t --s3-bucket ${{ steps.split.outputs._0 }}-merchant-platform-artifacts-${{ secrets.ACCOUNT_ID }} --output-template-file ./templates/$t --s3-prefix ${{ steps.pathS3.outputs.lowercase }}
+                  if [ "${t}" != "ProjectTemplate.json" ]
+                  then
+                      aws s3 cp ./templates/$t s3://${{ steps.split.outputs._0 }}-merchant-platform-artifacts-${{ secrets.ACCOUNT_ID }}/${{ steps.pathS3.outputs.lowercase }}/$t
+                  fi
+              fi
+            done
+          cd templates
+          zip -r projectTemplate.zip ./projectTemplate.json
+          aws s3 cp projectTemplate.zip s3://${{ steps.split.outputs._0 }}-merchant-platform-artifacts-${{ secrets.ACCOUNT_ID }}/${{ steps.pathS3.outputs.lowercase }}/projectTemplate.zip
+          aws s3 cp apigSetupProcess.asl.json s3://${{ steps.split.outputs._0 }}-merchant-platform-artifacts-${{ secrets.ACCOUNT_ID }}/${{ steps.pathS3.outputs.lowercase }}/apigSetupProcess.asl.json
+          aws s3 cp sendReportStepFunction.asl.json s3://${{ steps.split.outputs._0 }}-merchant-platform-artifacts-${{ secrets.ACCOUNT_ID }}/${{ steps.pathS3.outputs.lowercase }}/sendReportStepFunction.asl.json

@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  AppName:
+    Type: String
+  Environment:
+    Type: String
+  Country:
+    Type: String
+Resources:
+  SsmTableName:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${Environment}/${Country}/registry"
+      Tier: Standard
+      Type: String
+      Value: !Ref myDynamoDBTable
+
+  myDynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "merchantId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "merchantId"
+          KeyType: "HASH"
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      TableName: !Sub "${Environment}-${Country}-${AppName}-UserPool"
+      BillingMode: "PAY_PER_REQUEST"
+Outputs:
+  TableName:
+    Value: !GetAtt myDynamoDBTable.Arn
+  TableStreamArn:
+    Value: !GetAtt myDynamoDBTable.StreamArn

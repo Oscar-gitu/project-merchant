@@ -1,0 +1,82 @@
+name: Releases
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: environment
+        required: true
+        description: Select the environment
+jobs:
+  deploy_pipelines:
+    runs-on: ubuntu-latest
+    environment: "${{ github.event.inputs.environment }}"
+    name: "BUILD - ${{ github.event.inputs.environment }} - pipelines"
+    env:
+      BUCKET: "${{ github.event.inputs.environment }}-merchant-working-capital-artifacts-${{ secrets.ACCOUNT_ID }}"
+    steps:
+      - name: "Deploy_Pipeline"
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Deploy Pipeline
+        run: |
+          if [ "${{ github.event.inputs.environment }}" != "prod" ]
+           then
+            aws s3 cp ./templates/pipeline.yml s3://$BUCKET/deploys/integrator/pipeline.yml
+            aws cloudformation deploy --template-file ./templates/pipelinesBuilder.yaml --stack-name ${{ github.event.inputs.environment }}-integrator-pipelines --parameter-overrides Environment=${{ github.event.inputs.environment }} Country=all --capabilities CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM CAPABILITY_IAM
+          fi
+
+  build:
+    needs: [deploy_pipelines]
+    runs-on: ubuntu-latest
+    environment: "${{ github.event.inputs.environment }}"
+    name: "BUILD  - ${{ github.event.inputs.environment }} - ${{ matrix.version }}"
+    env:
+      BUCKET: "${{ github.event.inputs.environment }}-merchant-working-capital-artifacts-artifacts-${{ secrets.ACCOUNT_ID }}"
+    steps:
+      - name: "Deploy"
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install coverage
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          cp ./.env.dist ./.env
+          apm project install
+          sudo apt-get install zip
+
+      - name: Package tempaltes
+        run: |
+          apm project synth
+          aws s3 cp ./src/api.json s3://$BUCKET/deploys/back/api.json
+
+      - name: Deploy Project
+        if: ${{ github.event_name != 'pull_request' }}
+        run: |
+          for t in $(ls "templates")
+            do
+                aws cloudformation package --template-file ./templates/$t --s3-bucket $BUCKET --output-template-file ./templates/$t --s3-prefix deploys/back/
+                if [ "${t}" != "ProjectTemplate.json" ]
+                then
+                    aws s3 cp ./templates/$t s3://$BUCKET/deploys/back/$t
+                fi
+            done
+          cd templates
+          zip -r projectTemplate.zip ./projectTemplate.json
+          aws s3 cp projectTemplate.zip s3://$BUCKET/deploys/back/projectTemplate.zip

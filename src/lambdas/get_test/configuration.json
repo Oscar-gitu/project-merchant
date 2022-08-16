@@ -1,0 +1,264 @@
+{
+  "cfn": {
+    "Type": "AWS::Lambda::Function",
+    "Properties": {
+      "Code": "../src/lambdas/get_transaction",
+      "Handler": "lambda_function.lambda_handler",
+      "Role": {
+        "Fn::GetAtt": [
+          "ROLLambda",
+          "Arn"
+        ]
+      },
+      "Runtime": "python3.9",
+      "FunctionName": {
+        "Fn::Sub": "${Environment}-${Country}-${AppName}-get_transaction"
+      },
+      "MemorySize": {
+        "Fn::If": [
+          "isProd",
+          3008,
+          1024
+        ]
+      },
+      "Timeout": 30,
+      "Environment": {
+        "Variables": {
+          "ENVIRONMENT": {
+            "Ref": "Environment"
+          },
+          "COUNTRY": {
+            "Ref": "Country"
+          }
+        }
+      },
+      "VpcConfig": {
+        "SecurityGroupIds": [
+          {
+            "Ref": "SecurityGroup"
+          }
+        ],
+        "SubnetIds": {
+          "Fn::Split": [
+            ",",
+            {
+              "Ref": "SubnetsIds"
+            }
+          ]
+        }
+      },
+      "Layers": [
+        {
+          "Ref": "LYSCore"
+        },
+        {
+          "Ref": "LYSPsycopg2"
+        }
+      ],
+      "TracingConfig": {
+        "Mode": "Active"
+      }
+    }
+  },
+  "swagger": {
+    "/gettest": {
+      "get": {
+        "tags": [
+          "pending"
+        ],
+        "summary": "Return detail from transaction by reference",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "transaction",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "schema": {
+              "$ref": "#/definitions/Empty"
+            },
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "type": "string"
+              },
+              "Access-Control-Allow-Methods": {
+                "type": "string"
+              },
+              "Access-Control-Allow-Headers": {
+                "type": "string"
+              }
+            },
+            "examples": {
+              "application/json": {
+                "recordNo": "text",
+                "paymentDate": "YYYY-mm-dd",
+                "payTime": "HH:mm:ss",
+                "amount": "text",
+                "reference": "text",
+                "transactionId": "text",
+                "status": "text",
+                "msisdn": "text"
+              }
+            }
+          },
+          "401": {
+            "description": "It does not have sufficient authorization to carry out the operation.",
+            "schema": {
+              "$ref": "#/definitions/Empty"
+            },
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "type": "string"
+              },
+              "Access-Control-Allow-Methods": {
+                "type": "string"
+              },
+              "Access-Control-Allow-Headers": {
+                "type": "string"
+              }
+            },
+            "examples": {
+              "application/json": {
+                "message": "text"
+              }
+            }
+          },
+          "404": {
+            "description": "Missing parameters",
+            "schema": {
+              "$ref": "#/definitions/Empty"
+            },
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "type": "string"
+              },
+              "Access-Control-Allow-Methods": {
+                "type": "string"
+              },
+              "Access-Control-Allow-Headers": {
+                "type": "string"
+              }
+            },
+            "examples": {
+              "application/json": {
+                "message": "text"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "x-amazon-apigateway-request-validator": "Validate query string parameters and headers",
+        "x-amazon-apigateway-integration": {
+          "uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "GetTransaction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          },
+          "credentials": {
+            "Fn::GetAtt": [
+              "ROLApi",
+              "Arn"
+            ]
+          },
+          "responses": {
+            "default": {
+              "statusCode": "200",
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token,user,password'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              }
+            }
+          },
+          "passthroughBehavior": "when_no_templates",
+          "httpMethod": "POST",
+          "contentHandling": "CONVERT_TO_TEXT",
+          "type": "aws_proxy"
+        }
+      },
+      "options": {
+        "tags": [
+          "pending"
+        ],
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "schema": {
+              "$ref": "#/definitions/Empty"
+            },
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "type": "string"
+              },
+              "Access-Control-Allow-Methods": {
+                "type": "string"
+              },
+              "Access-Control-Allow-Headers": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "responses": {
+            "default": {
+              "statusCode": "200",
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token,user,password'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              }
+            }
+          },
+          "passthroughBehavior": "when_no_match",
+          "requestTemplates": {
+            "application/json": "{\"statusCode\": 200}"
+          },
+          "type": "mock"
+        }
+      }
+    }
+  }
+}

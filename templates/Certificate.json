@@ -1,0 +1,75 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "JSON string",
+  "Parameters": {
+    "DomainName": {
+      "Type": "String"
+    },
+    
+    "DomainNameFront": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "mtsCertificate": {
+      "Type": "AWS::CertificateManager::Certificate",
+      "Properties": {
+        "DomainName": {
+          "Ref": "DomainName"
+        },
+        "DomainValidationOptions": [
+          {
+            "DomainName": {
+              "Ref": "DomainName"
+            },
+            "HostedZoneId": {
+              "Ref": "DNS"
+            }
+          }
+        ],
+        "ValidationMethod": "DNS"
+      }
+    },
+    "DNS": {
+      "Type": "AWS::Route53::HostedZone",
+      "Properties": {
+        "HostedZoneConfig": {
+          "Comment": {
+            "Ref": "DomainName"
+          }
+        },
+        "Name": {
+          "Ref": "DomainName"
+        }
+      }
+    },
+    "DNSFront": {
+      "Type": "AWS::Route53::HostedZone",
+      "Properties": {
+        "HostedZoneConfig": {
+          "Comment": {
+            "Ref": "DomainNameFront"
+          }
+        },
+        "Name": {
+          "Ref": "DomainNameFront"
+        }
+      }
+    }
+    
+  },
+  "Outputs": {
+    "CertificateArn": {
+      "Description": "ACM Certificate ARN",
+      "Value": {
+        "Ref": "mtsCertificate"
+      }
+    },
+    "HostedZoneId": {
+      "Description": "Hosted Zone Id",
+      "Value": {
+        "Ref": "DNS"
+      }
+    }
+  }
+}

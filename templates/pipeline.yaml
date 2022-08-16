@@ -1,0 +1,187 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Code Pipeline implementation connected to merchant working capital for deploy with cloudformation.
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+  ProjectName:
+    Type: String
+    Description: The project Name.
+    Default: merchant-working-capital
+  TemplateForDeployment:
+    Type: String
+    Default: ProjectTemplate.json
+  ArtifactsZipName:
+    Type: String
+    Default: deploys/back/projectTemplate.zip
+  BucketArtifactName:
+    Type: String
+    Description: Optional bucket name if you pass this parameter the bucket will be exist  at the accounts else this template create a new bucket
+    Default: ''
+Conditions:
+  CreateBucketArtifacts: !Equals
+    - !Ref 'BucketArtifactName'
+    - ''
+Resources:
+  RoleCodePipeline:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${Environment}-${ProjectName}-pipeline-role'
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub '${Environment}-${ProjectName}-pipeline-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ec2:*
+                  - cloudwatch:*
+                  - cloudformation:*
+                  - rds:*
+                  - codebuild:*
+                Resource: '*'
+              - Effect: Allow
+                Action: s3:*
+                Resource: '*'
+  RoleCloudFormation:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${Environment}-${ProjectName}-cloudformation-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - cloudformation.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: !Sub '${Environment}-${ProjectName}-cloudformation-policy'
+          PolicyDocument:
+            Statement:
+              - Sid: VisualEditor0
+                Effect: Allow
+                Action:
+                  - s3:*
+                  - waf:*
+                  - iam:*
+                  - ssm:*
+                  - ec2:*
+                  - acm:*
+                  - logs:*
+                  - wafv2:*
+                  - lambda:*
+                  - appsync:*
+                  - dynamodb:*
+                  - apigateway:*
+                  - codedeploy:*
+                  - route53:*
+                  - cloudfront:*
+                  - cognito-idp:*
+                  - waf-regional:*
+                  - cloudformation:*
+                  - cognito-identity:*
+                  - elasticloadbalancing:*
+                  - organizations:ListRoots
+                  - organizations:ListParents
+                  - organizations:ListPolicies
+                  - organizations:ListChildren
+                  - organizations:DescribePolicy
+                  - organizations:DescribeAccount
+                  - organizations:DescribeOrganization
+                  - organizations:ListTargetsForPolicy
+                  - organizations:ListPoliciesForTarget
+                  - organizations:DescribeOrganizationalUnit
+                Resource: '*'
+            Version: '2012-10-17'
+  BucketArtifactStore:
+    Condition: CreateBucketArtifacts
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${Environment}-${ProjectName}-artifacts-${AWS::AccountId}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Sub '${ProjectName}-pipeline-version1'
+      RoleArn: !GetAtt 'RoleCodePipeline.Arn'
+      ArtifactStore:
+        Type: S3
+        Location: !If
+          - CreateBucketArtifacts
+          - !Ref 'BucketArtifactStore'
+          - !Ref 'BucketArtifactName'
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: !Sub 'Source-${ProjectName}'
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: 1
+                Provider: S3
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                S3Bucket: !If
+                  - CreateBucketArtifacts
+                  - !Ref 'BucketArtifactStore'
+                  - !Ref 'BucketArtifactName'
+                S3ObjectKey: !Ref 'ArtifactsZipName'
+                PollForSourceChanges: true
+              RunOrder: 1
+        - Name: Deploy
+          Actions:
+            - Name: CreateChangeSet
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: CHANGE_SET_REPLACE
+                ChangeSetName: !Sub '${Environment}-${ProjectName}-changeSet'
+                StackName: !Sub '${Environment}-${ProjectName}-stack'
+                Capabilities: CAPABILITY_IAM,CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
+                TemplatePath: !Sub 'SourceOutput::${TemplateForDeployment}'
+                RoleArn: !GetAtt 'RoleCloudFormation.Arn'
+              RunOrder: 1
+              InputArtifacts:
+                - Name: SourceOutput
+            - Name: ChangeSetExecute
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: CHANGE_SET_EXECUTE
+                ChangeSetName: !Sub '${Environment}-${ProjectName}-changeSet'
+                StackName: !Sub '${Environment}-${ProjectName}-stack'
+              RunOrder: 2
+              InputArtifacts:
+                - Name: SourceOutput
