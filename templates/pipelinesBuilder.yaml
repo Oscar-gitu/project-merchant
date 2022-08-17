@@ -160,11 +160,9 @@ Resources:
         AppName: !Ref ProjectName
         PrincipalTemplate: projectTemplate.json
         ArtifactName: projectTemplate.zip
-        MtsConnectorApiKey: "-"
         MtsConnectorHost: !FindInMap [!Ref Environment, sv, mtsHost]
         Country: SV
         CountryLowercase: sv
-        TimePerCountry: 30
         BucketArtifactName: !Sub "{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}"
         DomainName: !FindInMap [!Ref Environment, sv, DomainName]
         SubnetsIds: !Sub "/config/infra/${Environment}-merchant-platform-Business/private_subnet"
@@ -180,11 +178,9 @@ Resources:
         AppName: !Ref ProjectName
         PrincipalTemplate: projectTemplate.json
         ArtifactName: projectTemplate.zip
-        MtsConnectorApiKey: "-"
         MtsConnectorHost: !FindInMap [!Ref Environment, hn, mtsHost]
         Country: HN
         CountryLowercase: hn
-        TimePerCountry: 30
         BucketArtifactName: !Sub "{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}"
         DomainName: !FindInMap [!Ref Environment, hn, DomainName]
         SubnetsIds: !Sub "/config/infra/${Environment}-merchant-platform-Business/private_subnet"
@@ -200,11 +196,9 @@ Resources:
         AppName: !Ref ProjectName
         PrincipalTemplate: projectTemplate.json
         ArtifactName: projectTemplate.zip
-        MtsConnectorApiKey: "-"
         MtsConnectorHost: !FindInMap [!Ref Environment, bo, mtsHost]
         Country: BO
         CountryLowercase: bo
-        TimePerCountry: 30
         BucketArtifactName: !Sub "{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}"
         DomainName: !FindInMap [!Ref Environment, bo, DomainName]
         SubnetsIds: !Sub "/config/infra/${Environment}-merchant-platform-Business/private_subnet"
@@ -220,11 +214,9 @@ Resources:
         AppName: !Ref ProjectName
         PrincipalTemplate: projectTemplate.json
         ArtifactName: projectTemplate.zip
-        MtsConnectorApiKey: "-"
         MtsConnectorHost: !FindInMap [!Ref Environment, py, mtsHost]
         Country: PY
         CountryLowercase: py
-        TimePerCountry: 30
         BucketArtifactName: !Sub "{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}"
         DomainName: !FindInMap [!Ref Environment, py, DomainName]
         SubnetsIds: !Sub "/config/infra/${Environment}-merchant-platform-Business/private_subnet"
@@ -240,11 +232,9 @@ Resources:
         AppName: !Ref ProjectName
         PrincipalTemplate: projectTemplate.json
         ArtifactName: projectTemplate.zip
-        MtsConnectorApiKey: "-"
         MtsConnectorHost: !FindInMap [!Ref Environment, gt, mtsHost]
         Country: GT
         CountryLowercase: gt
-        TimePerCountry: 30
         BucketArtifactName: !Sub "{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}"
         DomainName: !FindInMap [!Ref Environment, gt, DomainName]
         SubnetsIds: !Sub "/config/infra/${Environment}-merchant-platform-Business/private_subnet"
