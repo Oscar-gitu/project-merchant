@@ -497,6 +497,7 @@
         }
       },
       "APIAccount": {
+        "DependsOn": "ROLApi",
         "Type": "AWS::ApiGateway::Account",
         "Properties": {
           "CloudWatchRoleArn": {
