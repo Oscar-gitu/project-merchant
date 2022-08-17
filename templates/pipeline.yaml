@@ -48,7 +48,20 @@ Conditions:
   CreateBucketArtifacts: !Equals
     - !Ref 'BucketArtifactName'
     - ''
+  IsProd: !Equals
+    - !Ref Environment
+    - prod
 Resources:
+  SSMDomainName:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: !Sub "/${Environment}/${CountryLowercase}/${AppName}/api/connector/domain/name"
+      Tier: Standard
+      Type: String
+      Value: !If
+        - IsProd
+        - !Sub "${AppName}.${CountryLowercase}.${DomainName}"
+        - !Sub "${Environment}.${AppName}.${CountryLowercase}.${DomainName}"
   RoleCodePipeline:
     Type: AWS::IAM::Role
     Properties:
