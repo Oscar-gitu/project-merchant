@@ -23,7 +23,7 @@ jobs:
     environment: "${{ github.event.inputs.environment }}"
     name: "BUILD - ${{ github.event.inputs.environment }} - pipelines"
     env:
-      BUCKET: "${{ github.event.inputs.environment }}-merchant-working-capital-artifacts-${{ secrets.ACCOUNT_ID }}"
+      BUCKET: "${{ github.event.inputs.environment }}-merchant-platform-artifacts-${{ secrets.ACCOUNT }}"
     steps:
       - name: "Deploy_Pipeline"
         uses: actions/checkout@v2
@@ -38,7 +38,7 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.environment }}" != "prod" ]
            then
-            aws s3 cp ./templates/pipeline.yaml s3://$BUCKET/deploys/integrator/pipeline.yaml
+            aws s3 cp ./templates/pipeline.yaml s3://$BUCKET/deploys/merchantcapital/pipeline.yaml
             aws cloudformation deploy --template-file ./templates/pipelinesBuilder.yaml --stack-name ${{ github.event.inputs.environment }}-merchant-working-capital-pipelines --parameter-overrides Environment=${{ github.event.inputs.environment }} Country=${{ github.event.inputs.country }} --capabilities CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM CAPABILITY_IAM
           fi
 
@@ -56,10 +56,13 @@ jobs:
             echo "::set-output name=matrix::['HN' ,'SV' , 'BO'  ,'PY' , 'GT']"
           fi
   build:
-    needs: [deploy_pipelines]
+    needs: [matrix_prep, deploy_pipelines]
     runs-on: ubuntu-latest
     environment: "${{ github.event.inputs.environment }}"
     name: "BUILD  - ${{ github.event.inputs.environment }} - ${{ matrix.version }}"
+    strategy:
+      matrix:
+        version: ${{fromJSON(needs.matrix_prep.outputs.matrix)}}
     env:
       BUCKET: "${{ github.event.inputs.environment }}-merchant-platform-artifacts-${{ secrets.ACCOUNT_ID }}"
     steps:
