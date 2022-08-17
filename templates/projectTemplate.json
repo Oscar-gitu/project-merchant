@@ -1,24 +1,551 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
-    "Description": "Create Bucket",
+    "Description": "creation of resources for merchant working capital",
+    "Parameters": {
+      "AppName": {
+        "Type": "String",
+        "Description": "App Name.",
+        "Default": "merchantcapital"
+      },
+      "Environment": {
+        "Type": "String",
+        "Description": "Environment name."
+      },
+      "ArtifactsBucket": {
+        "Type": "String",
+        "Description": "Bucket where all artifacts will be saved.",
+        "Default": ""
+      },
+      "Country": {
+        "Type": "String"
+      },
+      "ResourceRef": {
+        "Type": "String",
+        "Default": "*"
+      },
+      "ResourceRefS3": {
+        "Type": "String",
+        "Default": "*"
+      },
+      "MtsHost": {
+        "Type": "String"
+      }
+    },
+    "Conditions": {
+      "isProd": {
+        "Fn::Equals": [
+          {
+            "Ref": "Environment"
+          },
+          "prod"
+        ]
+      }
+    },
     "Resources": {
-        "BucketMerchant": {
-            "Type": "AWS::S3::Bucket",
-            "Properties": {
-                "BucketName": "merchant-buckett-123456789",
-                "VersioningConfiguration": {
-                    "Status": "Enabled"
-                }
+      "ROLLambda": {
+        "Type": "AWS::IAM::Role",
+        "Properties": {
+          "RoleName": {
+              "Fn::Sub": "${Environment}-${Country}-${AppName}-pipeline-role"
+          },
+          "AssumeRolePolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lambda.amazonaws.com"
+                },
+                "Action": "sts:AssumeRole"
+              }
+            ]
+          },
+          "Path": "/",
+          "Policies": [
+            {
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Action": [
+                      "logs:CreateLogGroup",
+                      "logs:CreateLogStream",
+                      "logs:DescribeLogStreams",
+                      "logs:PutLogEvents"
+                    ],
+                    "Resource": {
+                      "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*"
+                    }
+                  }
+                ]
+              },
+              "PolicyName": {
+                "Fn::Sub": "${Environment}-${Country}-${AppName}-lambdaLogPermission"
+              }
+            },
+            {
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Action": [
+                      "ec2:DescribeNetworkInterfaces",
+                      "ec2:CreateNetworkInterface",
+                      "ec2:DeleteNetworkInterface",
+                      "ec2:DescribeInstances",
+                      "ec2:AttachNetworkInterface"
+                    ],
+                    "Resource": "*"
+                  }
+                ]
+              },
+              "PolicyName": {
+                "Fn::Sub": "${Environment}-${Country}-${AppName}-lambdaVpcPermission"
+              }
+            },
+            {
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Action": [
+                      "ssm:GetParameters",
+                      "ssm:GetParameter"
+                    ],
+                    "Resource": {
+                      "Fn::Sub": "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
+                    }
+                  }
+                ]
+              },
+              "PolicyName": {
+                "Fn::Sub": "${Environment}-${Country}-${AppName}-lambdaSSMPermission"
+              }
+            },
+            {
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Action": [
+                      "states:StartExecution",
+                      "states:StartSyncExecution"
+                    ],
+                    "Resource": {
+                      "Fn::Sub": "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*"
+                    }
+                  }
+                ]
+              },
+              "PolicyName": {
+                "Fn::Sub": "${Environment}-${Country}-${AppName}-lambdaStateMachinePermission"
+              }
+            },
+            {
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Action": [
+                      "dynamodb:DescribeStream",
+                      "dynamodb:GetRecords",
+                      "dynamodb:GetShardIterator",
+                      "dynamodb:ListStreams",
+                      "dynamodb:UpdateItem"
+                    ],
+                    "Resource": {
+                      "Fn::Sub": "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*"
+                    }
+                  }
+                ]
+              },
+              "PolicyName": {
+                "Fn::Sub": "${Environment}-${Country}-${AppName}-lambdaDynamoDBStreamPermission"
+              }
+            },
+            {
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Action": "apigateway:GET",
+                    "Resource": [
+                      "arn:aws:apigateway:*::/restapis/*/deployments/*",
+                      "arn:aws:apigateway:*::/restapis/*/stages/*",
+                      "arn:aws:apigateway:*::/apikeys/*",
+                      "arn:aws:apigateway:*::/usageplans",
+                      "arn:aws:apigateway:*::/apikeys",
+                      "arn:aws:apigateway:*::/restapis/*/deployments",
+                      "arn:aws:apigateway:*::/usageplans/*/keys/*",
+                      "arn:aws:apigateway:*::/restapis/*/stages",
+                      "arn:aws:apigateway:*::/usageplans/*/keys"
+                    ]
+                  },
+                  {
+                    "Effect": "Allow",
+                    "Action": [
+                      "apigateway:GET"
+                    ],
+                    "Resource": [
+                      "arn:aws:apigateway:*::/usageplans/*"
+                    ]
+                  }
+                ]
+              },
+              "PolicyName": {
+                "Fn::Sub": "${Environment}-${Country}-${AppName}-lambdaUsagePlanPermission"
+              }
+            },
+            {
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Action": [
+                      "secretsmanager:GetResourcePolicy",
+                      "secretsmanager:GetSecretValue",
+                      "secretsmanager:DescribeSecret",
+                      "secretsmanager:ListSecretVersionIds"
+                    ],
+                    "Resource": {
+                      "Fn::Sub": "arn:aws:secretsmanager:*:${AWS::AccountId}:secret:*"
+                    }
+                  },
+                  {
+                    "Effect": "Allow",
+                    "Action": [
+                      "secretsmanager:GetRandomPassword",
+                      "secretsmanager:ListSecrets"
+                    ],
+                    "Resource": "*"
+                  }
+                ]
+              },
+              "PolicyName": {
+                "Fn::Sub": "${Environment}-${Country}-${AppName}-lambdaSecretsManagerPermission"
+              }
+            },
+            {
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Action": "kms:*",
+                    "Resource": "*"
+                  }
+                ]
+              },
+              "PolicyName": {
+                "Fn::Sub": "${Environment}-${Country}-${AppName}-lambdaKmsPermission"
+              }
+            },
+            {
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Action": [
+                      "sqs:*"
+                    ],
+                    "Resource": {
+                      "Fn::Sub": "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:*"
+                    }
+                  }
+                ]
+              },
+              "PolicyName": {
+                "Fn::Sub": "${Environment}-${Country}-${AppName}-lambdaSqsPermission"
+              }
+            },
+            {
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Action": [
+                      "xray:PutTraceSegments",
+                      "xray:PutTelemetryRecords"
+                    ],
+                    "Resource": {
+                      "Ref": "ResourceRef"
+                    }
+                  }
+                ]
+              },
+              "PolicyName": {
+                "Fn::Sub": "${Environment}-${Country}-${AppName}-x-ray-access"
+              }
+            },
+            {
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Action": [
+                      "s3:*",
+                      "s3-object-lambda:*"
+                    ],
+                    "Resource": {
+                      "Ref": "ResourceRefS3"
+                    }
+                  }
+                ]
+              },
+              "PolicyName": {
+                "Fn::Sub": "${Environment}-${Country}-${AppName}-s3-log-access"
+              }
             }
-        },
-        "BucketMerchant2": {
-            "Type": "AWS::S3::Bucket",
-            "Properties": {
-                "BucketName": "merchant2-buckett2-123456789",
-                "VersioningConfiguration": {
-                    "Status": "Enabled"
-                }
-            }
+          ]
         }
+      },
+      "ROLApi": {
+        "Type": "AWS::IAM::Role",
+        "Properties": {
+          "RoleName": {
+              "Fn::Sub": "${Environment}-${Country}-${AppName}-api-role"
+          },
+          "AssumeRolePolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "apigateway.amazonaws.com"
+                },
+                "Action": "sts:AssumeRole"
+              }
+            ]
+          },
+          "Path": "/",
+          "Policies": [
+            {
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Action": "lambda:InvokeFunction",
+                    "Resource": "*"
+                  }
+                ]
+              },
+              "PolicyName": {
+                "Fn::Sub": "${Environment}-${Country}-${AppName}-ApiInvokeLambdaPermission"
+              }
+            },
+            {
+              "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Action": [
+                      "logs:CreateLogGroup",
+                      "logs:CreateLogStream",
+                      "logs:DescribeLogGroups",
+                      "logs:DescribeLogStreams",
+                      "logs:PutLogEvents",
+                      "logs:GetLogEvents",
+                      "logs:FilterLogEvents"
+                    ],
+                    "Resource": "*"
+                  }
+                ]
+              },
+              "PolicyName": {
+                "Fn::Sub": "${Environment}-${Country}-${AppName}-ApiLogPermission"
+              }
+            }
+          ]
+        }
+      },
+      "APIG": {
+        "Type": "AWS::ApiGateway::RestApi",
+        "Properties": {
+          "Body": {
+            "Fn::Transform": {
+              "Name": "AWS::Include",
+              "Parameters": {
+                "Location": "../src/api.json"
+              }
+            }
+          },
+          "Name": {
+            "Fn::Sub": "${Environment}-${Country}-${AppName}"
+          },
+          "Parameters": {
+            "endpointConfigurationTypes": "REGIONAL"
+          }
+        }
+      },
+      "DAPIGmerchantcapitalback": {
+        "DependsOn": "APIG",
+        "Type": "AWS::ApiGateway::Deployment",
+        "Properties": {
+          "RestApiId": {
+            "Ref": "APIG"
+          }
+        },
+        "DeletionPolicy": "Retain"
+      },
+      "LGAPI": {
+        "Type": "AWS::Logs::LogGroup",
+        "Properties": {
+          "RetentionInDays": 365
+        },
+        "DeletionPolicy": "Retain"
+      },
+      "SAPIGmerchantcapitalback": {
+        "Type": "AWS::ApiGateway::Stage",
+        "Properties": {
+          "RestApiId": {
+            "Ref": "APIG"
+          },
+          "DeploymentId": {
+            "Ref": "DAPIGmerchantcapitalback"
+          },
+          "StageName": {
+            "Ref": "Environment"
+          },
+          "TracingEnabled": true,
+          "Variables": {
+            "mtsHost": {
+              "Ref": "MtsHost"
+            },
+            "mtsApiKey": {
+              "Fn::Sub": "{{resolve:secretsmanager:${Environment}-${Country}-api-connector-api-key:SecretString}}"
+            }
+          },
+          "AccessLogSetting": {
+            "DestinationArn": {
+              "Fn::GetAtt": [
+                "LGAPI",
+                "Arn"
+              ]
+            },
+            "Format": "{ 'requestId':'$context.requestId', 'ip': '$context.identity.sourceIp', 'caller':'$context.identity.caller', 'user':'$context.identity.user', 'requestTime':'$context.requestTime', 'httpMethod':'$context.httpMethod', 'resourcePath':'$context.resourcePath', 'status':'$context.status', 'protocol':'$context.protocol', 'responseLength':'$context.responseLength'}"
+          }
+        }
+      },
+      "UP": {
+        "Type": "AWS::ApiGateway::UsagePlan",
+        "Properties": {
+          "ApiStages": [
+            {
+              "ApiId": {
+                "Ref": "APIG"
+              },
+              "Stage": {
+                "Ref": "SAPIGmerchantcapitalback"
+              }
+            }
+          ],
+          "Description": "Custom merchantcapital usage plan",
+          "UsagePlanName": {
+            "Fn::Sub": "${Environment}-${Country}-${AppName}-Plan"
+          }
+        }
+      },
+      "KAPIGmerchantcapitalback": {
+        "Type": "AWS::ApiGateway::ApiKey",
+        "DependsOn": [
+          "DAPIGmerchantcapitalback",
+          "APIG"
+        ],
+        "Properties": {
+          "Name": {
+            "Fn::Sub": "${Environment}-${Country}-${AppName}-ApiKey"
+          },
+          "Description": "CloudFormation API Key V1",
+          "Enabled": true,
+          "StageKeys": [
+            {
+              "RestApiId": {
+                "Ref": "APIG"
+              },
+              "StageName": {
+                "Ref": "SAPIGmerchantcapitalback"
+              }
+            }
+          ],
+          "Tags": [
+            {
+              "Key": "Merchantcapital:ApiKey",
+              "Value": "MerchantSetup"
+            }
+          ]
+        }
+      },
+      "UPK": {
+        "Type": "AWS::ApiGateway::UsagePlanKey",
+        "Properties": {
+          "KeyId": {
+            "Ref": "KAPIGmerchantcapitalback"
+          },
+          "KeyType": "API_KEY",
+          "UsagePlanId": {
+            "Ref": "UP"
+          }
+        }
+      },
+      "APIAccount": {
+        "Type": "AWS::ApiGateway::Account",
+        "Properties": {
+          "CloudWatchRoleArn": {
+            "Fn::GetAtt": [
+              "ROLApi",
+              "Arn"
+            ]
+          }
+        }
+      },
+      "SSMApiId": {
+        "Type": "AWS::SSM::Parameter",
+        "Properties": {
+          "Name": {
+            "Fn::Sub": "/${Environment}/${Country}/${AppName}/api/id"
+          },
+          "Tier": "Standard",
+          "Type": "String",
+          "Value": {
+            "Ref": "APIG"
+          }
+        }
+      },
+      "StackWAF": {
+        "Type": "AWS::CloudFormation::Stack",
+        "Properties": {
+          "TemplateURL": {
+            "Fn::Sub": "https://${ArtifactsBucket}.s3.${AWS::URLSuffix}/deploys/${AppName}/${Country}/Waf.yaml"
+          },
+          "Parameters": {
+            "Environment": {
+              "Ref": "Environment"
+            },
+            "ApiID": {
+              "Ref": "APIG"
+            },
+            "ApiDeployVersion": {
+              "Ref": "SAPIGmerchantcapitalback"
+            },
+            "Country": {
+              "Ref": "Country"
+            }
+          },
+          "TimeoutInMinutes": 60
+        }
+      }
     }
-}
+  }
+  
