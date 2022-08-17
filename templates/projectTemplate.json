@@ -534,6 +534,18 @@
           },
           "TimeoutInMinutes": 60
         }
+      },
+      "LYSCore": {
+        "Type": "AWS::Lambda::LayerVersion",
+        "Properties": {
+          "CompatibleRuntimes": [
+            "python3.9"
+          ],
+          "Content": "../src/layers/core",
+          "LayerName": {
+            "Fn::Sub": "${Environment}-${Country}-${AppName}-core"
+          }
+        }
       }
     }
   }
