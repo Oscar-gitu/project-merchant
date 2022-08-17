@@ -38,7 +38,7 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.environment }}" != "prod" ]
            then
-            aws s3 cp ./templates/pipeline.yml s3://$BUCKET/deploys/integrator/pipeline.yaml
+            aws s3 cp ./templates/pipeline.yaml s3://$BUCKET/deploys/integrator/pipeline.yaml
             aws cloudformation deploy --template-file ./templates/pipelinesBuilder.yaml --stack-name ${{ github.event.inputs.environment }}-merchant-working-capital-pipelines --parameter-overrides Environment=${{ github.event.inputs.environment }} Country=${{ github.event.inputs.country }} --capabilities CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM CAPABILITY_IAM
           fi
 

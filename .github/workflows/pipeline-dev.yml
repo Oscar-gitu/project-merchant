@@ -26,7 +26,7 @@ jobs:
           aws-region: us-east-1
       - name: Deploy Pipeline
         run: |
-          aws s3 cp ./templates/pipeline.yml s3://$BUCKET/deploys/merchantcapital/pipeline.yaml
+          aws s3 cp ./templates/pipeline.yaml s3://$BUCKET/deploys/merchantcapital/pipeline.yaml
           aws cloudformation deploy --template-file ./templates/pipelinesBuilder.yaml --stack-name dev-merchant-working-capital-pipelines --parameter-overrides Environment=dev Country=hn --capabilities CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM CAPABILITY_IAM
 
 
