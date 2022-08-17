@@ -6,6 +6,17 @@ on:
         type: environment
         required: true
         description: Select the environment
+      country:
+        type: choice
+        description: "country to deploy"
+        required: true
+        options:
+          - ALL
+          - HN
+          - SV
+          - BO
+          - PY
+          - GT
 jobs:
   deploy_pipelines:
     runs-on: ubuntu-latest
@@ -27,17 +38,30 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.environment }}" != "prod" ]
            then
-            aws s3 cp ./templates/pipeline.yml s3://$BUCKET/deploys/integrator/pipeline.yml
-            aws cloudformation deploy --template-file ./templates/pipelinesBuilder.yaml --stack-name ${{ github.event.inputs.environment }}-integrator-pipelines --parameter-overrides Environment=${{ github.event.inputs.environment }} Country=all --capabilities CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM CAPABILITY_IAM
+            aws s3 cp ./templates/pipeline.yml s3://$BUCKET/deploys/integrator/pipeline.yaml
+            aws cloudformation deploy --template-file ./templates/pipelinesBuilder.yaml --stack-name ${{ github.event.inputs.environment }}-merchant-working-capital-pipelines --parameter-overrides Environment=${{ github.event.inputs.environment }} Country=${{ github.event.inputs.country }} --capabilities CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM CAPABILITY_IAM
           fi
 
+  matrix_prep:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          if echo ${{ github.event.inputs.country  != 'ALL' }} | grep -c "true"
+          then
+            echo "::set-output name=matrix::['${{github.event.inputs.country}}']"
+          else
+            echo "::set-output name=matrix::['HN' ,'SV' , 'BO'  ,'PY' , 'GT']"
+          fi
   build:
     needs: [deploy_pipelines]
     runs-on: ubuntu-latest
     environment: "${{ github.event.inputs.environment }}"
     name: "BUILD  - ${{ github.event.inputs.environment }} - ${{ matrix.version }}"
     env:
-      BUCKET: "${{ github.event.inputs.environment }}-merchant-working-capital-artifacts-artifacts-${{ secrets.ACCOUNT_ID }}"
+      BUCKET: "${{ github.event.inputs.environment }}-merchant-platform-artifacts-${{ secrets.ACCOUNT_ID }}"
     steps:
       - name: "Deploy"
         uses: actions/checkout@v2
@@ -52,6 +76,11 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: "3.9"
+      - id: pathS3
+        name: Change String Case
+        uses: ASzc/change-string-case-action@v2
+        with:
+          string: "deploys/merchantcapital/${{ matrix.version }}"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -64,19 +93,19 @@ jobs:
       - name: Package tempaltes
         run: |
           apm project synth
-          aws s3 cp ./src/api.json s3://$BUCKET/deploys/back/api.json
+          aws s3 cp ./src/api.json s3://$BUCKET/${{ steps.pathS3.outputs.lowercase }}/api.json
 
       - name: Deploy Project
         if: ${{ github.event_name != 'pull_request' }}
         run: |
           for t in $(ls "templates")
             do
-                aws cloudformation package --template-file ./templates/$t --s3-bucket $BUCKET --output-template-file ./templates/$t --s3-prefix deploys/back/
+                aws cloudformation package --template-file ./templates/$t --s3-bucket $BUCKET --output-template-file ./templates/$t --s3-prefix ${{ steps.pathS3.outputs.lowercase }}
                 if [ "${t}" != "ProjectTemplate.json" ]
                 then
-                    aws s3 cp ./templates/$t s3://$BUCKET/deploys/back/$t
+                    aws s3 cp ./templates/$t s3://$BUCKET/${{ steps.pathS3.outputs.lowercase }}/$t
                 fi
             done
           cd templates
           zip -r projectTemplate.zip ./projectTemplate.json
-          aws s3 cp projectTemplate.zip s3://$BUCKET/deploys/back/projectTemplate.zip
+          aws s3 cp projectTemplate.zip s3://$BUCKET/${{ steps.pathS3.outputs.lowercase }}/projectTemplate.zip

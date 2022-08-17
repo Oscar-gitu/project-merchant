@@ -4,20 +4,46 @@ Parameters:
   Environment:
     Type: String
     Default: dev
-  ProjectName:
+  AppName:
     Type: String
     Description: The project Name.
-    Default: merchant-working-capital
-  TemplateForDeployment:
+    Default: merchantcapital
+  PrincipalTemplate:
     Type: String
-    Default: projectTemplate.json
-  ArtifactsZipName:
+    Default: ProjectTemplate.json
+  ArtifactName:
     Type: String
-    Default: deploys/back/projectTemplate.zip
+    Default: projectTemplate.zip
   BucketArtifactName:
     Type: String
     Description: Optional bucket name if you pass this parameter the bucket will be exist  at the accounts else this template create a new bucket
     Default: ''
+  Country:
+    Type: String
+    Description: >-
+      country ISO code as described in the ISO 3166 international standard
+      (ALPHA-2).
+    MinLength: 2
+    MaxLength: 2
+    AllowedPattern: "^[A-Z]*$"
+    ConstraintDescription: Malformed input-Parameter Country must only contain uppercase
+  CountryLowercase:
+    Type: String
+    Description: >-
+      country ISO code as described in the ISO 3166 international standard
+      (ALPHA-2).
+    MinLength: 2
+    MaxLength: 2
+    AllowedPattern: "^[a-z]*$"
+    ConstraintDescription: Malformed input-Parameter CountryLowercase must only contain lowercase
+  DomainName:
+    Type: String
+  SubnetsIds:
+    Type: AWS::SSM::Parameter::Value<String>
+  SecurityGroup:
+    Type: AWS::SSM::Parameter::Value<String>
+  MtsConnectorHost:
+    Type: String
 Conditions:
   CreateBucketArtifacts: !Equals
     - !Ref 'BucketArtifactName'
@@ -26,7 +52,7 @@ Resources:
   RoleCodePipeline:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub '${Environment}-${ProjectName}-pipeline-role'
+      RoleName: !Sub '${Environment}-${CountryLowercase}-${AppName}-pipeline-role'
       Path: /
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -37,7 +63,7 @@ Resources:
                 - codepipeline.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: !Sub '${Environment}-${ProjectName}-pipeline-policy'
+        - PolicyName: !Sub '${Environment}-${CountryLowercase}-${AppName}-pipeline-policy'
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -59,7 +85,7 @@ Resources:
   RoleCloudFormation:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub '${Environment}-${ProjectName}-cloudformation-role'
+      RoleName: !Sub '${Environment}-${CountryLowercase}-${AppName}-cloudformation-role'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -70,7 +96,7 @@ Resources:
             Action: sts:AssumeRole
       Path: /
       Policies:
-        - PolicyName: !Sub '${Environment}-${ProjectName}-cloudformation-policy'
+        - PolicyName: !Sub '${Environment}-${CountryLowercase}-${AppName}-cloudformation-policy'
           PolicyDocument:
             Statement:
               - Sid: VisualEditor0
@@ -112,7 +138,7 @@ Resources:
     Condition: CreateBucketArtifacts
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub '${Environment}-${ProjectName}-artifacts-${AWS::AccountId}'
+      BucketName: !Sub '${Environment}-${CountryLowercase}-${AppName}-artifacts-${AWS::AccountId}'
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -127,7 +153,7 @@ Resources:
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
-      Name: !Sub '${ProjectName}-pipeline-version1'
+      Name: !Sub '${AppName}-${CountryLowercase}-pipeline-version1'
       RoleArn: !GetAtt 'RoleCodePipeline.Arn'
       ArtifactStore:
         Type: S3
@@ -138,7 +164,7 @@ Resources:
       Stages:
         - Name: Source
           Actions:
-            - Name: !Sub 'Source-${ProjectName}'
+            - Name: !Sub 'Source-${AppName}'
               ActionTypeId:
                 Category: Source
                 Owner: AWS
@@ -151,7 +177,7 @@ Resources:
                   - CreateBucketArtifacts
                   - !Ref 'BucketArtifactStore'
                   - !Ref 'BucketArtifactName'
-                S3ObjectKey: !Ref 'ArtifactsZipName'
+                S3ObjectKey: !Sub "deploys/${AppName}/${CountryLowercase}/${ArtifactName}"
                 PollForSourceChanges: true
               RunOrder: 1
         - Name: Deploy
@@ -164,11 +190,49 @@ Resources:
                 Provider: CloudFormation
               Configuration:
                 ActionMode: CHANGE_SET_REPLACE
-                ChangeSetName: !Sub '${Environment}-${ProjectName}-changeSet'
-                StackName: !Sub '${Environment}-${ProjectName}-stack'
+                ChangeSetName: !Join
+                  - "-"
+                  - - !Ref Environment
+                    - !Ref CountryLowercase
+                    - !Ref AppName
+                    - changeSet
+                StackName: !Join
+                  - "-"
+                  - - !Ref Environment
+                    - !Ref CountryLowercase
+                    - !Ref AppName
+                    - stack
                 Capabilities: CAPABILITY_IAM,CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
-                TemplatePath: !Sub 'SourceOutput::${TemplateForDeployment}'
+                TemplatePath: !Join
+                  - "::"
+                  - - SourceOutput
+                    - !Ref PrincipalTemplate
                 RoleArn: !GetAtt 'RoleCloudFormation.Arn'
+                ParameterOverrides: !Sub
+                  - >-
+                    {"Environment": "${Environment}",
+                     "ArtifactsBucket": "${ArtifactsBucket}",
+                     "AppName": "${AppName}",
+                     "Country": "${Country}",
+                     "FolderCountry": "${FolderCountry}",
+                     "DomainName": "${DomainName}",
+                     "MtsHost": "${MtsHost}",
+                     "SubnetsIds": "${SubnetsIds}",
+                     "SecurityGroup": "${SecurityGroup}"
+                    }
+                  - Environment: !Ref Environment
+                    ArtifactsBucket: !If
+                      - CreateBucketArtifacts
+                      - !Ref BucketArtifactStore
+                      - !Ref BucketArtifactName
+                    projectName: !Ref AppName
+                    Country: !Ref CountryLowercase
+                    DomainName: !Sub >-
+                      /${Environment}/${CountryLowercase}/api/connector/domain/name
+                    FolderCountry: !Ref Country
+                    MtsHost: !Ref MtsConnectorHost
+                    SubnetsIds: !Ref SubnetsIds
+                    SecurityGroup: !Ref SecurityGroup
               RunOrder: 1
               InputArtifacts:
                 - Name: SourceOutput
@@ -180,8 +244,18 @@ Resources:
                 Provider: CloudFormation
               Configuration:
                 ActionMode: CHANGE_SET_EXECUTE
-                ChangeSetName: !Sub '${Environment}-${ProjectName}-changeSet'
-                StackName: !Sub '${Environment}-${ProjectName}-stack'
+                ChangeSetName: !Join
+                  - "-"
+                  - - !Ref Environment
+                    - !Ref CountryLowercase
+                    - !Ref AppName
+                    - changeSet
+                StackName: !Join
+                  - "-"
+                  - - !Ref Environment
+                    - !Ref CountryLowercase
+                    - !Ref AppName
+                    - stack
               RunOrder: 2
               InputArtifacts:
                 - Name: SourceOutput

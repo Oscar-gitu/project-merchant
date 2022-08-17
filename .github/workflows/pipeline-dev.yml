@@ -13,7 +13,7 @@ jobs:
     name: "BUILD - dev - pipelines"
     if: ${{ github.event_name != 'pull_request' }}
     env:
-      BUCKET: dev-merchant-working-capital-artifacts-${{ secrets.ACCOUNT }}
+      BUCKET: dev-merchant-platform-artifacts-${{ secrets.ACCOUNT }}
     steps:
       - name: "Deploy_Pipeline"
         uses: actions/checkout@v2
@@ -26,27 +26,9 @@ jobs:
           aws-region: us-east-1
       - name: Deploy Pipeline
         run: |
-          aws cloudformation deploy --template-file ./templates/pipeline.yaml --stack-name dev-merchant-working-capital-pipelines --parameter-overrides Environment=dev  --capabilities CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM CAPABILITY_IAM
+          aws s3 cp ./templates/pipeline.yml s3://$BUCKET/deploys/merchantcapital/pipeline.yaml
+          aws cloudformation deploy --template-file ./templates/pipelinesBuilder.yaml --stack-name dev-merchant-working-capital-pipelines --parameter-overrides Environment=dev Country=hn --capabilities CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM CAPABILITY_IAM
 
-  #sonar:
-  #  name: Sonar
-  #  needs: [unit_test]
-  #  runs-on: ubuntu-latest
-  #  env:
-  #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-  #    SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-  #  steps:
-  #    - uses: actions/checkout@v2
-  #      with:
-  #        fetch-depth: 0
-  #    - name: Download Coverage report from Build Job
-  #      uses: actions/download-artifact@v3
-  #      with:
-  #        name: coverage
-  #    - name: SonarCloud Scan
-  #      uses: SonarSource/sonarcloud-github-action@master
-  #    - name: SonarQube Quality Gate check
-  #      uses: SonarSource/sonarqube-quality-gate-action@master
 
   unit_test:
     name: Test
@@ -55,7 +37,7 @@ jobs:
       app_name: merchantworkingcapitalback
       ENVIRONMENT: dev
       DEVELOPER: DeployUnittest
-      BUCKETTEMPLATES: dev-merchant-working-capital-artifacts-${{ secrets.ACCOUNT }}
+      BUCKETTEMPLATES: dev-merchant-platform-artifacts-${{ secrets.ACCOUNT }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -102,12 +84,20 @@ jobs:
     needs: [deploy_pipelines]
     if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        country: ["HN"]
     env:
-      BUCKET: dev-merchant-working-capital-artifacts-${{ secrets.ACCOUNT }}
+      BUCKET: dev-merchant-platform-artifacts-${{ secrets.ACCOUNT }}
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+      - id: pathS3
+        name: Change String Case
+        uses: ASzc/change-string-case-action@v2
+        with:
+          string: "deploys/merchantcapital/${{ matrix.country }}"
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -119,12 +109,12 @@ jobs:
         run: |
           for t in $(ls "templates")
             do
-                aws cloudformation package --template-file ./templates/$t --s3-bucket $BUCKET --output-template-file ./templates/$t --s3-prefix deploys/back/
-                if [ "${t}" != "ProjectTemplate.json" ]
+                aws cloudformation package --template-file ./templates/$t --s3-bucket $BUCKET --output-template-file ./templates/$t --s3-prefix ${{ steps.pathS3.outputs.lowercase }}
+                if [ "${t}" != "projectTemplate.json" ]
                 then
-                    aws s3 cp ./templates/$t s3://$BUCKET/deploys/back/$t
+                    aws s3 cp ./templates/$t s3://$BUCKET/${{ steps.pathS3.outputs.lowercase }}/$t
                 fi
             done
           cd templates
           zip -r projectTemplate.zip ./projectTemplate.json
-          aws s3 cp projectTemplate.zip s3://$BUCKET/deploys/back/projectTemplate.zip
+          aws s3 cp projectTemplate.zip s3://$BUCKET/${{ steps.pathS3.outputs.lowercase }}/projectTemplate.zip
