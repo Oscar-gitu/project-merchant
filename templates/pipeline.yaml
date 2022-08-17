@@ -81,7 +81,12 @@ Resources:
                 Resource: '*'
               - Effect: Allow
                 Action: s3:*
-                Resource: '*'
+                Resource: !If
+                  - CreateBucketArtifacts
+                  - !GetAtt
+                    - BucketArtifactStore
+                    - Arn
+                  - !Sub "arn:aws:s3:::${BucketArtifactName}"
   RoleCloudFormation:
     Type: AWS::IAM::Role
     Properties:
