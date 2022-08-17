@@ -153,7 +153,7 @@ Resources:
     Condition: BuildPipeSV
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}.s3.${AWS::URLSuffix}/deploys/${ProjectName}/pipeline.yml
+      TemplateURL: !Sub https://{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}.s3.${AWS::URLSuffix}/deploys/${ProjectName}/pipeline.yaml
       TimeoutInMinutes: 60
       Parameters:
         Environment: !Ref Environment
@@ -173,7 +173,7 @@ Resources:
     Condition: BuildPipeHN
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}.s3.${AWS::URLSuffix}/deploys/${ProjectName}/pipeline.yml
+      TemplateURL: !Sub https://{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}.s3.${AWS::URLSuffix}/deploys/${ProjectName}/pipeline.yaml
       TimeoutInMinutes: 60
       Parameters:
         Environment: !Ref Environment
@@ -193,7 +193,7 @@ Resources:
     Condition: BuildPipeBO
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}.s3.${AWS::URLSuffix}/deploys/${ProjectName}/pipeline.yml
+      TemplateURL: !Sub https://{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}.s3.${AWS::URLSuffix}/deploys/${ProjectName}/pipeline.yaml
       TimeoutInMinutes: 60
       Parameters:
         Environment: !Ref Environment
@@ -213,7 +213,7 @@ Resources:
     Condition: BuildPipePY
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}.s3.${AWS::URLSuffix}/deploys/${ProjectName}/pipeline.yml
+      TemplateURL: !Sub https://{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}.s3.${AWS::URLSuffix}/deploys/${ProjectName}/pipeline.yaml
       TimeoutInMinutes: 60
       Parameters:
         Environment: !Ref Environment
@@ -233,7 +233,7 @@ Resources:
     Condition: BuildPipeGT
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}.s3.${AWS::URLSuffix}/deploys/${ProjectName}/pipeline.yml
+      TemplateURL: !Sub https://{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}.s3.${AWS::URLSuffix}/deploys/${ProjectName}/pipeline.yaml
       TimeoutInMinutes: 60
       Parameters:
         Environment: !Ref Environment
