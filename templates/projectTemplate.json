@@ -546,6 +546,23 @@
             "Fn::Sub": "${Environment}-${Country}-${AppName}-core"
           }
         }
+      },
+      "LYSPsycopg2": {
+        "Type": "AWS::Lambda::LayerVersion",
+        "Properties": {
+          "CompatibleRuntimes": [
+            "python3.9"
+          ],
+          "Content": {
+            "S3Bucket": {
+              "Ref": "ArtifactsBucket"
+            },
+            "S3Key": "deploys/psycopg2.zip"
+          },
+          "LayerName": {
+            "Fn::Sub": "${Environment}-${Country}-${AppName}-psycopg2"
+          }
+        }
       }
     }
   }
