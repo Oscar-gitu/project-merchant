@@ -120,6 +120,7 @@ Resources:
                   - waf:*
                   - iam:*
                   - ssm:*
+                  - secretsmanager:*
                   - ec2:*
                   - acm:*
                   - logs:*
