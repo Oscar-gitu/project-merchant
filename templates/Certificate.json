@@ -4,10 +4,6 @@
   "Parameters": {
     "DomainName": {
       "Type": "String"
-    },
-    
-    "DomainNameFront": {
-      "Type": "String"
     }
   },
   "Resources": {
@@ -42,21 +38,7 @@
           "Ref": "DomainName"
         }
       }
-    },
-    "DNSFront": {
-      "Type": "AWS::Route53::HostedZone",
-      "Properties": {
-        "HostedZoneConfig": {
-          "Comment": {
-            "Ref": "DomainNameFront"
-          }
-        },
-        "Name": {
-          "Ref": "DomainNameFront"
-        }
-      }
     }
-    
   },
   "Outputs": {
     "CertificateArn": {

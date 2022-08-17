@@ -165,8 +165,6 @@ Resources:
         CountryLowercase: sv
         BucketArtifactName: !Sub "{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}"
         DomainName: !FindInMap [!Ref Environment, sv, DomainName]
-        SubnetsIds: !Sub "/config/infra/${Environment}-merchant-platform-Business/private_subnet"
-        SecurityGroup: !Sub "/config/infra/${Environment}-merchant-platform-Business/security-group"
   StackPipelineHN:
     Condition: BuildPipeHN
     Type: AWS::CloudFormation::Stack
@@ -183,8 +181,6 @@ Resources:
         CountryLowercase: hn
         BucketArtifactName: !Sub "{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}"
         DomainName: !FindInMap [!Ref Environment, hn, DomainName]
-        SubnetsIds: !Sub "/config/infra/${Environment}-merchant-platform-Business/private_subnet"
-        SecurityGroup: !Sub "/config/infra/${Environment}-merchant-platform-Business/security-group"
   StackPipelineBO:
     Condition: BuildPipeBO
     Type: AWS::CloudFormation::Stack
@@ -201,8 +197,6 @@ Resources:
         CountryLowercase: bo
         BucketArtifactName: !Sub "{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}"
         DomainName: !FindInMap [!Ref Environment, bo, DomainName]
-        SubnetsIds: !Sub "/config/infra/${Environment}-merchant-platform-Business/private_subnet"
-        SecurityGroup: !Sub "/config/infra/${Environment}-merchant-platform-Business/security-group"
   StackPipelinePY:
     Condition: BuildPipePY
     Type: AWS::CloudFormation::Stack
@@ -219,8 +213,6 @@ Resources:
         CountryLowercase: py
         BucketArtifactName: !Sub "{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}"
         DomainName: !FindInMap [!Ref Environment, py, DomainName]
-        SubnetsIds: !Sub "/config/infra/${Environment}-merchant-platform-Business/private_subnet"
-        SecurityGroup: !Sub "/config/infra/${Environment}-merchant-platform-Business/security-group"
   StackPipelineGT:
     Condition: BuildPipeGT
     Type: AWS::CloudFormation::Stack
@@ -237,5 +229,3 @@ Resources:
         CountryLowercase: gt
         BucketArtifactName: !Sub "{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}"
         DomainName: !FindInMap [!Ref Environment, gt, DomainName]
-        SubnetsIds: !Sub "/config/infra/${Environment}-merchant-platform-Business/private_subnet"
-        SecurityGroup: !Sub "/config/infra/${Environment}-merchant-platform-Business/security-group"

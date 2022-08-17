@@ -38,10 +38,6 @@ Parameters:
     ConstraintDescription: Malformed input-Parameter CountryLowercase must only contain lowercase
   DomainName:
     Type: String
-  SubnetsIds:
-    Type: AWS::SSM::Parameter::Value<String>
-  SecurityGroup:
-    Type: AWS::SSM::Parameter::Value<String>
   MtsConnectorHost:
     Type: String
 Conditions:
@@ -232,11 +228,8 @@ Resources:
                      "ArtifactsBucket": "${ArtifactsBucket}",
                      "AppName": "${AppName}",
                      "Country": "${Country}",
-                     "FolderCountry": "${FolderCountry}",
                      "DomainName": "${DomainName}",
-                     "MtsHost": "${MtsHost}",
-                     "SubnetsIds": "${SubnetsIds}",
-                     "SecurityGroup": "${SecurityGroup}"
+                     "MtsHost": "${MtsHost}"
                     }
                   - Environment: !Ref Environment
                     ArtifactsBucket: !If
@@ -246,11 +239,8 @@ Resources:
                     projectName: !Ref AppName
                     Country: !Ref CountryLowercase
                     DomainName: !Sub >-
-                      /${Environment}/${CountryLowercase}/api/connector/domain/name
-                    FolderCountry: !Ref Country
+                      /${Environment}/${CountryLowercase}/${AppName}/api/connector/domain/name
                     MtsHost: !Ref MtsConnectorHost
-                    SubnetsIds: !Ref SubnetsIds
-                    SecurityGroup: !Ref SecurityGroup
               RunOrder: 1
               InputArtifacts:
                 - Name: SourceOutput
