@@ -46,7 +46,7 @@
         "Type": "AWS::IAM::Role",
         "Properties": {
           "RoleName": {
-              "Fn::Sub": "${Environment}-${Country}-${AppName}-pipeline-role"
+              "Fn::Sub": "${Environment}-${Country}-${AppName}-lambda-role"
           },
           "AssumeRolePolicyDocument": {
             "Version": "2012-10-17",
