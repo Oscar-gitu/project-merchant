@@ -158,7 +158,7 @@ Resources:
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
-      Name: !Sub '${AppName}-${CountryLowercase}-pipeline-version1'
+      Name: !Sub '${AppName}-${CountryLowercase}-pipeline'
       RoleArn: !GetAtt 'RoleCodePipeline.Arn'
       ArtifactStore:
         Type: S3

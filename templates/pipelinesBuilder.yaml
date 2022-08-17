@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Merchant Plataform Infraestructure
+Description: Merchant Plataform Infraestructure Builder
 Parameters:
   Environment:
     Type: String
