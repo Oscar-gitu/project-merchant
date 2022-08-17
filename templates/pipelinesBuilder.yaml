@@ -1,0 +1,251 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Merchant Plataform Infraestructure
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues:
+      - dev
+      - qa
+      - staging
+      - prod
+    Description: Environment name.
+    Default: dev
+
+  Country:
+    Type: String
+    AllowedValues:
+      - sv
+      - hn
+      - bo
+      - py
+      - gt
+      - all
+    Default: hn
+  ProjectName:
+    Type: String
+    Default: merchantcapital
+
+Conditions:
+  BuildPipeSV: !Or
+    - !Equals
+      - "sv"
+      - !Ref Country
+    - !Equals
+      - "all"
+      - !Ref Country
+  BuildPipeHN: !Or
+    - !Equals
+      - "hn"
+      - !Ref Country
+    - !Equals
+      - "all"
+      - !Ref Country
+  BuildPipeBO: !Or
+    - !Equals
+      - "bo"
+      - !Ref Country
+    - !Equals
+      - "all"
+      - !Ref Country
+  BuildPipePY: !Or
+    - !Equals
+      - "py"
+      - !Ref Country
+    - !Equals
+      - "all"
+      - !Ref Country
+  BuildPipeGT: !Or
+    - !Equals
+      - "gt"
+      - !Ref Country
+    - !Equals
+      - "all"
+      - !Ref Country
+
+Mappings:
+  dev:
+    sv:
+      mtsHost: dev.sv.mfsmillicom.io
+      MtsConnectorApiKey: "-"
+      DomainName: mfsmillicom.io
+    hn:
+      mtsHost: dev.hn.mfsmillicom.io
+      MtsConnectorApiKey: "-"
+      DomainName: mfsmillicom.io
+    bo:
+      mtsHost: dev.bo.mfsmillicom.io
+      MtsConnectorApiKey: "-"
+      DomainName: mfsmillicom.io
+    py:
+      mtsHost: dev.py.mfsmillicom.io
+      MtsConnectorApiKey: "-"
+      DomainName: mfsmillicom.io
+    gt:
+      mtsHost: dev.gt.mfsmillicom.io
+      MtsConnectorApiKey: "-"
+      DomainName: mfsmillicom.io
+  qa:
+    sv:
+      mtsHost: qa.sv.mfsmillicom.io
+      MtsConnectorApiKey: "-"
+      DomainName: mfsmillicom.io
+    hn:
+      mtsHost: qa.hn.mfsmillicom.io
+      MtsConnectorApiKey: "-"
+      DomainName: mfsmillicom.io
+    bo:
+      mtsHost: qa.bo.mfsmillicom.io
+      MtsConnectorApiKey: "-"
+      DomainName: mfsmillicom.io
+    py:
+      mtsHost: qa.py.mfsmillicom.io
+      MtsConnectorApiKey: "-"
+      DomainName: mfsmillicom.io
+    gt:
+      mtsHost: qa.gt.mfsmillicom.io
+      MtsConnectorApiKey: "-"
+      DomainName: mfsmillicom.io
+  staging:
+    sv:
+      mtsHost: staging.sv.mfsmillicom.io
+      MtsConnectorApiKey: "-"
+      DomainName: mfsmillicom.io
+    hn:
+      mtsHost: staging.hn.mfsmillicom.io
+      MtsConnectorApiKey: "-"
+      DomainName: mfsmillicom.io
+    bo:
+      mtsHost: staging.bo.mfsmillicom.io
+      MtsConnectorApiKey: "-"
+      DomainName: mfsmillicom.io
+    py:
+      mtsHost: staging.py.mfsmillicom.io
+      MtsConnectorApiKey: "-"
+      DomainName: mfsmillicom.io
+    gt:
+      mtsHost: staging.gt.mfsmillicom.io
+      MtsConnectorApiKey: "-"
+      DomainName: mfsmillicom.io
+  prod:
+    sv:
+      mtsHost: sv.tigomoney.io
+      MtsConnectorApiKey: "-"
+      DomainName: tigomoney.io
+    hn:
+      mtsHost: hn.tigomoney.io
+      MtsConnectorApiKey: "-"
+      DomainName: tigomoney.io
+    bo:
+      mtsHost: bo.tigomoney.io
+      MtsConnectorApiKey: "-"
+      DomainName: tigomoney.io
+    py:
+      mtsHost: py.tigomoney.io
+      MtsConnectorApiKey: "-"
+      DomainName: tigomoney.io
+    gt:
+      mtsHost: gt.tigomoney.io
+      MtsConnectorApiKey: "-"
+      DomainName: tigomoney.io
+
+Resources:
+  StackPipelineSV:
+    Condition: BuildPipeSV
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}.s3.${AWS::URLSuffix}/deploys/${ProjectName}/pipeline.yml
+      TimeoutInMinutes: 60
+      Parameters:
+        Environment: !Ref Environment
+        AppName: !Ref ProjectName
+        PrincipalTemplate: projectTemplate.json
+        ArtifactName: projectTemplate.zip
+        MtsConnectorApiKey: "-"
+        MtsConnectorHost: !FindInMap [!Ref Environment, sv, mtsHost]
+        Country: SV
+        CountryLowercase: sv
+        TimePerCountry: 30
+        BucketArtifactName: !Sub "{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}"
+        DomainName: !FindInMap [!Ref Environment, sv, DomainName]
+        SubnetsIds: !Sub "/config/infra/${Environment}-merchant-platform-Business/private_subnet"
+        SecurityGroup: !Sub "/config/infra/${Environment}-merchant-platform-Business/security-group"
+  StackPipelineHN:
+    Condition: BuildPipeHN
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}.s3.${AWS::URLSuffix}/deploys/${ProjectName}/pipeline.yml
+      TimeoutInMinutes: 60
+      Parameters:
+        Environment: !Ref Environment
+        AppName: !Ref ProjectName
+        PrincipalTemplate: projectTemplate.json
+        ArtifactName: projectTemplate.zip
+        MtsConnectorApiKey: "-"
+        MtsConnectorHost: !FindInMap [!Ref Environment, hn, mtsHost]
+        Country: HN
+        CountryLowercase: hn
+        TimePerCountry: 30
+        BucketArtifactName: !Sub "{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}"
+        DomainName: !FindInMap [!Ref Environment, hn, DomainName]
+        SubnetsIds: !Sub "/config/infra/${Environment}-merchant-platform-Business/private_subnet"
+        SecurityGroup: !Sub "/config/infra/${Environment}-merchant-platform-Business/security-group"
+  StackPipelineBO:
+    Condition: BuildPipeBO
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}.s3.${AWS::URLSuffix}/deploys/${ProjectName}/pipeline.yml
+      TimeoutInMinutes: 60
+      Parameters:
+        Environment: !Ref Environment
+        AppName: !Ref ProjectName
+        PrincipalTemplate: projectTemplate.json
+        ArtifactName: projectTemplate.zip
+        MtsConnectorApiKey: "-"
+        MtsConnectorHost: !FindInMap [!Ref Environment, bo, mtsHost]
+        Country: BO
+        CountryLowercase: bo
+        TimePerCountry: 30
+        BucketArtifactName: !Sub "{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}"
+        DomainName: !FindInMap [!Ref Environment, bo, DomainName]
+        SubnetsIds: !Sub "/config/infra/${Environment}-merchant-platform-Business/private_subnet"
+        SecurityGroup: !Sub "/config/infra/${Environment}-merchant-platform-Business/security-group"
+  StackPipelinePY:
+    Condition: BuildPipePY
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}.s3.${AWS::URLSuffix}/deploys/${ProjectName}/pipeline.yml
+      TimeoutInMinutes: 60
+      Parameters:
+        Environment: !Ref Environment
+        AppName: !Ref ProjectName
+        PrincipalTemplate: projectTemplate.json
+        ArtifactName: projectTemplate.zip
+        MtsConnectorApiKey: "-"
+        MtsConnectorHost: !FindInMap [!Ref Environment, py, mtsHost]
+        Country: PY
+        CountryLowercase: py
+        TimePerCountry: 30
+        BucketArtifactName: !Sub "{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}"
+        DomainName: !FindInMap [!Ref Environment, py, DomainName]
+        SubnetsIds: !Sub "/config/infra/${Environment}-merchant-platform-Business/private_subnet"
+        SecurityGroup: !Sub "/config/infra/${Environment}-merchant-platform-Business/security-group"
+  StackPipelineGT:
+    Condition: BuildPipeGT
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}.s3.${AWS::URLSuffix}/deploys/${ProjectName}/pipeline.yml
+      TimeoutInMinutes: 60
+      Parameters:
+        Environment: !Ref Environment
+        AppName: !Ref ProjectName
+        PrincipalTemplate: projectTemplate.json
+        ArtifactName: projectTemplate.zip
+        MtsConnectorApiKey: "-"
+        MtsConnectorHost: !FindInMap [!Ref Environment, gt, mtsHost]
+        Country: GT
+        CountryLowercase: gt
+        TimePerCountry: 30
+        BucketArtifactName: !Sub "{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}"
+        DomainName: !FindInMap [!Ref Environment, gt, DomainName]
+        SubnetsIds: !Sub "/config/infra/${Environment}-merchant-platform-Business/private_subnet"
+        SecurityGroup: !Sub "/config/infra/${Environment}-merchant-platform-Business/security-group"
