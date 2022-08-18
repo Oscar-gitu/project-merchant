@@ -10,7 +10,7 @@ Resources:
   SsmTableName:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub "/${Environment}/${Country}/registry"
+      Name: !Sub "/${Environment}/${Country}/${AppName}/registry"
       Tier: Standard
       Type: String
       Value: !Ref myDynamoDBTable

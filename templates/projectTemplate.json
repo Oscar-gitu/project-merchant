@@ -563,6 +563,26 @@
             "Fn::Sub": "${Environment}-${Country}-${AppName}-psycopg2"
           }
         }
+      },
+      "StackDynamoDb": {
+        "Type": "AWS::CloudFormation::Stack",
+        "Properties": {
+          "TemplateURL": {
+            "Fn::Sub": "https://${ArtifactsBucket}.s3.${AWS::URLSuffix}/deploys/${AppName}/${Country}/dynamodb.yaml"
+          },
+          "Parameters": {
+            "AppName": {
+              "Ref": "AppName"
+            },
+            "Environment": {
+              "Ref": "Environment"
+            },
+            "Country": {
+              "Ref": "Country"
+            }
+          },
+          "TimeoutInMinutes": 60
+        }
       }
     }
   }
