@@ -36,11 +36,10 @@ jobs:
           aws-region: us-east-1
       - name: Deploy Pipeline
         run: |
-          print(${{ github.event.inputs.country.lowercase }})
           if [ "${{ github.event.inputs.environment }}" != "prod" ]
            then
             aws s3 cp ./templates/pipeline.yaml s3://$BUCKET/deploys/merchantcapital/pipeline.yaml
-            aws cloudformation deploy --template-file ./templates/pipelinesBuilder.yaml --stack-name ${{ github.event.inputs.environment }}-merchant-working-capital-pipelines --parameter-overrides Environment=${{ github.event.inputs.environment }} Country=${{ github.event.inputs.country.lowercase }} --capabilities CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM CAPABILITY_IAM
+            aws cloudformation deploy --template-file ./templates/pipelinesBuilder.yaml --stack-name ${{ github.event.inputs.environment }}-merchant-working-capital-pipelines --parameter-overrides Environment=${{ github.event.inputs.environment }} Country=${{ github.event.inputs.country.}}.toLowerCase() --capabilities CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM CAPABILITY_IAM
           fi
 
   matrix_prep:
