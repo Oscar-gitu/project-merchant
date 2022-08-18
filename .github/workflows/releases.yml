@@ -65,7 +65,7 @@ jobs:
       matrix:
         version: ${{fromJSON(needs.matrix_prep.outputs.matrix)}}
     env:
-      BUCKET: "${{ github.event.inputs.environment }}-merchant-platform-artifacts-${{ secrets.ACCOUNT_ID }}"
+      BUCKET: "${{ github.event.inputs.environment }}-merchant-platform-artifacts-${{ secrets.ACCOUNT }}"
     steps:
       - name: "Deploy"
         uses: actions/checkout@v2
@@ -94,7 +94,7 @@ jobs:
           apm project install
           sudo apt-get install zip
 
-      - name: Package tempaltes
+      - name: Package templates
         run: |
           apm project synth
           aws s3 cp ./src/api.json s3://$BUCKET/${{ steps.pathS3.outputs.lowercase }}/api.json
