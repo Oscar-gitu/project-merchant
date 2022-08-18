@@ -1,7 +1,4 @@
-# -*- coding: utf-8 -*-
-from core_api.responses import (
-    api_response,
-)
+from core_api.responses import api_response
 
 
 def lambda_handler(event, context):

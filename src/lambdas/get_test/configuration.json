@@ -14,35 +14,30 @@
       "FunctionName": {
         "Fn::Sub": "${Environment}-${Country}-${AppName}-get_test"
       },
-      "MemorySize": {
-        "Fn::If": [
-          "isProd",
-          3008,
-          1024
-        ]
-      },
+      "MemorySize": 128,
       "Timeout": 30,
       "Environment": {
         "Variables": {
           "ENVIRONMENT": {
             "Ref": "Environment"
-          },
-          "COUNTRY": {
-            "Ref": "Country"
           }
         }
       },
       "VpcConfig": {
         "SecurityGroupIds": [
           {
-            "Ref": "SecurityGroup"
+            "Fn::ImportValue": {
+              "Fn::Sub": "${NetworkStackParameter}-NoIngressSecurityGroup"
+            }
           }
         ],
         "SubnetIds": {
           "Fn::Split": [
             ",",
             {
-              "Ref": "SubnetsIds"
+              "Fn::ImportValue": {
+                "Fn::Sub": "${NetworkStackParameter}-PrivateSubnets"
+              }
             }
           ]
         }
@@ -50,9 +45,6 @@
       "Layers": [
         {
           "Ref": "LYSCore"
-        },
-        {
-          "Ref": "LYSPsycopg2"
         }
       ],
       "TracingConfig": {
@@ -63,26 +55,10 @@
   "swagger": {
     "/gettest": {
       "get": {
-        "tags": [
-          "pending"
-        ],
-        "summary": "Return detail from transaction by reference",
         "parameters": [
           {
             "name": "x-api-key",
             "in": "header",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "Authorization",
-            "in": "header",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "transaction",
-            "in": "path",
             "required": true,
             "type": "string"
           }
@@ -108,62 +84,6 @@
               },
               "Access-Control-Allow-Headers": {
                 "type": "string"
-              }
-            },
-            "examples": {
-              "application/json": {
-                "recordNo": "text",
-                "paymentDate": "YYYY-mm-dd",
-                "payTime": "HH:mm:ss",
-                "amount": "text",
-                "reference": "text",
-                "transactionId": "text",
-                "status": "text",
-                "msisdn": "text"
-              }
-            }
-          },
-          "401": {
-            "description": "It does not have sufficient authorization to carry out the operation.",
-            "schema": {
-              "$ref": "#/definitions/Empty"
-            },
-            "headers": {
-              "Access-Control-Allow-Origin": {
-                "type": "string"
-              },
-              "Access-Control-Allow-Methods": {
-                "type": "string"
-              },
-              "Access-Control-Allow-Headers": {
-                "type": "string"
-              }
-            },
-            "examples": {
-              "application/json": {
-                "message": "text"
-              }
-            }
-          },
-          "404": {
-            "description": "Missing parameters",
-            "schema": {
-              "$ref": "#/definitions/Empty"
-            },
-            "headers": {
-              "Access-Control-Allow-Origin": {
-                "type": "string"
-              },
-              "Access-Control-Allow-Methods": {
-                "type": "string"
-              },
-              "Access-Control-Allow-Headers": {
-                "type": "string"
-              }
-            },
-            "examples": {
-              "application/json": {
-                "message": "text"
               }
             }
           }
@@ -182,7 +102,7 @@
                 "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
                 {
                   "Fn::GetAtt": [
-                    "GetTransaction",
+                    "GetTest",
                     "Arn"
                   ]
                 },
@@ -201,7 +121,7 @@
               "statusCode": "200",
               "responseParameters": {
                 "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
-                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token,user,password'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
                 "method.response.header.Access-Control-Allow-Origin": "'*'"
               }
             }
@@ -213,9 +133,6 @@
         }
       },
       "options": {
-        "tags": [
-          "pending"
-        ],
         "consumes": [
           "application/json"
         ],
@@ -247,7 +164,7 @@
               "statusCode": "200",
               "responseParameters": {
                 "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
-                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token,user,password'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
                 "method.response.header.Access-Control-Allow-Origin": "'*'"
               }
             }

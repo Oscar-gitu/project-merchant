@@ -1,4 +1,3 @@
-
 from unittest import TestCase
 from core_api.utils import get_status_code, get_body
 from .lambda_function import (
