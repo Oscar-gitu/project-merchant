@@ -36,6 +36,7 @@ jobs:
           aws-region: us-east-1
       - name: Deploy Pipeline
         run: |
+          print(${{ github.event.inputs.environment }})
           if [ "${{ github.event.inputs.environment }}" != "prod" ]
            then
             aws s3 cp ./templates/pipeline.yaml s3://$BUCKET/deploys/merchantcapital/pipeline.yaml
