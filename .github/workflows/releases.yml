@@ -20,7 +20,7 @@ on:
 jobs:
   deploy_pipelines:
     runs-on: ubuntu-latest
-    environment: "${{ github.event.inputs.environment }}"
+    environment: "${{ github.event.inputs.country.lowercase }}"
     name: "BUILD - ${{ github.event.inputs.environment }} - pipelines"
     env:
       BUCKET: "${{ github.event.inputs.environment }}-merchant-platform-artifacts-${{ secrets.ACCOUNT }}"
