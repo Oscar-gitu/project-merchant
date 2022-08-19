@@ -98,6 +98,14 @@ jobs:
         uses: ASzc/change-string-case-action@v2
         with:
           string: "deploys/merchantcapital/${{ matrix.country }}"
+      - name: Download Artifact from Build Job
+        uses: actions/download-artifact@v3
+        with:
+          name: artifact
+      - name: Unpacking Artifact
+        run: |
+          sudo apt install zip unzip
+          unzip  -o  context.zip
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
