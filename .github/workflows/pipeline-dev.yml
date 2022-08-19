@@ -71,7 +71,7 @@ jobs:
           path: coverage.xml
       - name: Compile Project
         run: |
-          apm project synth --set-outputs --use-export --add-export-prefix ${{ matrix.country }}
+          apm project synth --set-outputs --use-export --add-export-prefix hn
           zip -r context src templates
       - name: Upload Artifact to Deploy Job
         uses: actions/upload-artifact@v3
