@@ -5,12 +5,12 @@
       "Code": "../src/lambdas/get_test",
       "Handler": "lambda_function.lambda_handler",
       "Role": {
-        "Fn::GetAtt": [
-          "ROLLambda",
-          "Arn"
-        ]
+        "Ref": "Role"
       },
       "Runtime": "python3.9",
+      "TracingConfig": {
+        "Mode": "Active"
+      },
       "FunctionName": {
         "Fn::Sub": "${Environment}-${Country}-${AppName}-get_test"
       },
@@ -20,36 +20,38 @@
         "Variables": {
           "ENVIRONMENT": {
             "Ref": "Environment"
+          },
+          "APPNAME": {
+            "Ref": "AppName"
+          },
+          "COUNTRY": {
+            "Ref": "Country"
           }
         }
       },
       "VpcConfig": {
         "SecurityGroupIds": [
           {
-            "Fn::ImportValue": {
-              "Fn::Sub": "${NetworkStackParameter}-NoIngressSecurityGroup"
-            }
+            "Ref": "SecurityGroup"
           }
         ],
         "SubnetIds": {
           "Fn::Split": [
             ",",
             {
-              "Fn::ImportValue": {
-                "Fn::Sub": "${NetworkStackParameter}-PrivateSubnets"
-              }
+              "Ref": "SubnetsIds"
             }
           ]
         }
       },
       "Layers": [
         {
-          "Ref": "LYSCore"
+          "Ref": "LYRCoreArn"
+        },
+        {
+          "Ref": "Psycopg2Arn"
         }
-      ],
-      "TracingConfig": {
-        "Mode": "Active"
-      }
+      ]
     }
   },
   "swagger": {
@@ -101,27 +103,23 @@
               [
                 "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
                 {
-                  "Fn::GetAtt": [
-                    "GetTest",
-                    "Arn"
-                  ]
+                  "Fn::ImportValue": {
+                    "Fn::Sub": "${Country}GetTestArn"
+                  }
                 },
                 "/invocations"
               ]
             ]
           },
           "credentials": {
-            "Fn::GetAtt": [
-              "ROLApi",
-              "Arn"
-            ]
+            "Ref": "ROLApiArn"
           },
           "responses": {
             "default": {
               "statusCode": "200",
               "responseParameters": {
                 "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
-                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token,Mts-Token,Accept'",
                 "method.response.header.Access-Control-Allow-Origin": "'*'"
               }
             }
@@ -164,7 +162,7 @@
               "statusCode": "200",
               "responseParameters": {
                 "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
-                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token,Mts-Token,Accept'",
                 "method.response.header.Access-Control-Allow-Origin": "'*'"
               }
             }
