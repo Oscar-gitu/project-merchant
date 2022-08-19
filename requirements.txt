@@ -10,7 +10,7 @@ colorama>=0.4.4
 shellingham>=1.4.0
 typer-cli
 python-dotenv~=0.19.2
-aoricaan-cli>=0.1.17
+aoricaan-cli>=0.3.2
 PyJWT~=2.4.0
 openpyxl
 croniter
