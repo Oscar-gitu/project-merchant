@@ -46,27 +46,21 @@
           [
             "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
             {
-              "Fn::GetAtt": [
-                "{{lambdaName}}",
-                "Arn"
-              ]
+              "Fn::ImportValue": { "Fn::Sub" : "${Country}{{lambdaName}}Arn" }
             },
             "/invocations"
           ]
         ]
       },
       "credentials": {
-        "Fn::GetAtt": [
-          "ROLApi",
-          "Arn"
-        ]
+        "Ref": "ROLApiArn"
       },
       "responses": {
         "default": {
           "statusCode": "200",
           "responseParameters": {
             "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
-            "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+            "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token,Mts-Token,Accept'",
             "method.response.header.Access-Control-Allow-Origin": "'*'"
           }
         }
@@ -109,7 +103,7 @@
           "statusCode": "200",
           "responseParameters": {
             "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'",
-            "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+            "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token,Mts-Token,Accept'",
             "method.response.header.Access-Control-Allow-Origin": "'*'"
           }
         }

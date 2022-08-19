@@ -4,12 +4,12 @@
     "Code": "../{{code}}",
     "Handler": "{{handler}}",
     "Role": {
-      "Fn::GetAtt": [
-        "ROLLambda",
-        "Arn"
-      ]
+      "Ref": "Role"
     },
     "Runtime": "python3.9",
+    "TracingConfig": {
+      "Mode": "Active"
+    },
     "FunctionName": {
       "Fn::Sub": "${Environment}-${Country}-${AppName}-{{name}}"
     },
@@ -19,35 +19,37 @@
       "Variables": {
         "ENVIRONMENT": {
           "Ref": "Environment"
+        },
+        "APPNAME": {
+          "Ref": "AppName"
+        },
+        "COUNTRY": {
+          "Ref": "Country"
         }
       }
     },
     "VpcConfig": {
       "SecurityGroupIds": [
         {
-          "Fn::ImportValue": {
-            "Fn::Sub": "${NetworkStackParameter}-NoIngressSecurityGroup"
-          }
+          "Ref": "SecurityGroup"
         }
       ],
       "SubnetIds": {
         "Fn::Split": [
           ",",
           {
-            "Fn::ImportValue": {
-              "Fn::Sub": "${NetworkStackParameter}-PrivateSubnets"
-            }
+            "Ref": "SubnetsIds"
           }
         ]
       }
     },
     "Layers": [
       {
-        "Ref": "LYSCore"
+        "Ref": "LYRCoreArn"
+      },
+      {
+        "Ref": "Psycopg2Arn"
       }
-    ],
-    "TracingConfig": {
-      "Mode": "Active"
-    }
+    ]
   }
 }

@@ -180,6 +180,8 @@ Resources:
         Country: HN
         CountryLowercase: hn
         BucketArtifactName: !Sub "{{resolve:ssm:/config/${Environment}/infra/bucket/artifacts}}"
+        SubnetsIds: !Sub "/config/infra/${Environment}-merchant-platform-Business/private_subnet"
+        SecurityGroup: !Sub "/config/infra/${Environment}-merchant-platform-Business/security-group
         DomainName: !FindInMap [!Ref Environment, hn, DomainName]
   StackPipelineBO:
     Condition: BuildPipeBO

@@ -40,6 +40,10 @@ Parameters:
     Type: String
   MtsConnectorHost:
     Type: String
+  SubnetsIds:
+    Type: String
+  SecurityGroup:
+    Type: String
 Conditions:
   CreateBucketArtifacts: !Equals
     - !Ref 'BucketArtifactName'
@@ -230,7 +234,9 @@ Resources:
                      "AppName": "${AppName}",
                      "Country": "${Country}",
                      "DomainName": "${DomainName}",
-                     "MtsHost": "${MtsHost}"
+                     "MtsHost": "${MtsHost}",
+                     "SubnetsIds": "${SubnetsIds}",
+                     "SecurityGroup": "${SecurityGroup}"
                     }
                   - Environment: !Ref Environment
                     ArtifactsBucket: !If
@@ -242,6 +248,8 @@ Resources:
                     DomainName: !Sub >-
                       /${Environment}/${CountryLowercase}/${AppName}/api/connector/domain/name
                     MtsHost: !Ref MtsConnectorHost
+                    SubnetsIds: !Ref SubnetsIds
+                    SecurityGroup: !Ref SecurityGroup
               RunOrder: 1
               InputArtifacts:
                 - Name: SourceOutput

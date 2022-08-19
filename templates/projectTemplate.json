@@ -29,6 +29,12 @@
       },
       "MtsHost": {
         "Type": "String"
+      },
+      "SubnetsIds": {
+        "Type": "String"
+      },
+      "SecurityGroup": {
+        "Type": "String"
       }
     },
     "Conditions": {
